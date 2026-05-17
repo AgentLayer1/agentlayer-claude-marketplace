@@ -2,7 +2,7 @@
 name: init
 description: Guided first-run onboarding for the agent-kevin plugin. Walks through Kevin's character (SOUL), role (IDENTITY), your basics (name, timezone), an optional web pull from your blog/site/LinkedIn/etc., and communication style — then scaffolds CLAUDE.md (operating manual + @-imports), SOUL.md, IDENTITY.md, USER.md, and .claude/settings.json. If a CLAUDE.md already exists at the home directory, Kevin's version is written to CLAUDE.local.md instead. Skill packs are configured inline at the end or via /agent-kevin:configure-skills any time later. Invoke once after installing the plugin.
 disable-model-invocation: true
-allowed-tools: Read, Write, Edit, AskUserQuestion, WebFetch, Bash(mkdir *), Bash(cp *), Bash(cat *), Bash(ls *), Bash(find *), Bash(git config *), Bash(readlink *), Bash(date *), Bash(echo *), Bash(test *), Bash([ *)
+allowed-tools: Read, Write, Edit, AskUserQuestion, WebFetch, Bash(mkdir *), Bash(cp *), Bash(cat *), Bash(ls *), Bash(find *), Bash(git config *), Bash(readlink *), Bash(date *), Bash(echo *), Bash(test *), Bash([ *), Bash(grep *), Bash(printf *)
 ---
 
 # Initialize Kevin
@@ -273,6 +273,24 @@ cp "${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md" "$CLAUDE_DEST"
 - `$CLAUDE_DEST` ← `cp ${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md` (verbatim — operating manual + `@-imports` for SOUL/IDENTITY/USER/knowledge)
 
 If `COLLISION="yes"`, note this for the Step 9 status block so the user knows Kevin wrote to `CLAUDE.local.md`. Claude Code auto-loads `.local.md` files alongside the main `CLAUDE.md`, so the user's existing instructions and Kevin's coexist — Kevin's `@-imports` cascade still pulls in the identity stack.
+
+Write a `.gitignore` so the home dir is safe to track in git out of the box. **Collision-aware**: if one already exists, don't overwrite — but append the two Kevin-critical entries (`.claude/settings.local.json` holds API keys, `.kevin/` holds runtime tokens + compile state) if they aren't already covered. Both must be gitignored or the user will leak secrets / churn on every Kevin run.
+
+```bash
+if [ ! -f "$HOME_DIR/.gitignore" ]; then
+  cp "${CLAUDE_PLUGIN_ROOT}/templates/.gitignore" "$HOME_DIR/.gitignore"
+else
+  # Existing .gitignore — append Kevin-critical entries if missing.
+  APPEND=""
+  grep -qxF ".claude/settings.local.json" "$HOME_DIR/.gitignore" || APPEND="${APPEND}.claude/settings.local.json"$'\n'
+  grep -qxF ".kevin/" "$HOME_DIR/.gitignore" || APPEND="${APPEND}.kevin/"$'\n'
+  if [ -n "$APPEND" ]; then
+    printf '\n# agent-kevin\n%s' "$APPEND" >> "$HOME_DIR/.gitignore"
+  fi
+fi
+```
+
+Match is exact-line (`grep -xF`) — so `.kevin/` won't false-match on `!.kevin/keep-me` or a partial substring. The full template (when written fresh) also ignores secrets (`.env*`, `keys.json`, `*.pem`, `*.key`, `certificates/`) and OS cruft (`.DS_Store`, `Thumbs.db`); on collision we trust the user's existing patterns for those and only enforce the two Kevin-specific entries.
 
 Write project settings so the plugin auto-loads on subsequent launches AND all its bundled MCP tools are pre-granted (no per-call confirm prompts):
 
