@@ -593,7 +593,7 @@ After editing `~/.claude/settings.json`, launch `claude` from any directory, hav
 ## Privacy
 
 - **All data stays local.** Your agent home is markdown on your disk. No cloud sync unless you choose to commit it to git.
-- **API keys live in `.claude/settings.local.json`**, gitignored by default. The plugin's `.gitignore` includes it.
+- **API keys live in `.claude/settings.local.json` and data in `.kevin/`**, gitignored by default. The plugin's `.gitignore` includes them.
 - **Transcripts are redacted before persisting.** The session-capture hook scrubs all values present in `settings.local.json` and runs prefix heuristics for common key formats.
 - **Anthropic training opt-out + telemetry disable** is recommended on your Claude Code install. See [docs.claude.com](https://docs.claude.com).
 - **The folder is the product.** If anything goes wrong, the markdown + git history is the complete backup.
